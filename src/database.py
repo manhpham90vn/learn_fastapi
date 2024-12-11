@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from fastapi import HTTPException, Depends
+from typing import Annotated
+from sqlalchemy.orm import Session
 
 SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://admin:admin@localhost:3306/fastapi'
 
@@ -15,3 +18,18 @@ except Exception as e:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+
+def getDatabase():
+    session = SessionLocal()
+
+    try:
+        yield session
+    except Exception as e:
+        print("Database not connected", e)
+        raise HTTPException(status_code=500, detail="Database not connected")
+    finally:
+        session.close()
+
+
+dbDepends = Annotated[Session, Depends(getDatabase)]

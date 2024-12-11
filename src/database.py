@@ -12,7 +12,6 @@ try:
 except Exception as e:
     print("Database not connected", e)
 
-Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-session = Session()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

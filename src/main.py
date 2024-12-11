@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Path, Query, HTTPException
+from fastapi import FastAPI, Path, Query, HTTPException, Depends
+from typing import Annotated
 from .models.book import Book
 from .models.bookrequest import BookRequest
 from starlette import status
 from sqlalchemy import or_
-from .database import engine, session
+from sqlalchemy.orm import Session
+from .database import engine, SessionLocal
 from typing import Optional
 
 app = FastAPI()
@@ -11,16 +13,30 @@ app = FastAPI()
 Book.metadata.create_all(bind=engine)
 
 
-@app.get("/books", status_code=status.HTTP_200_OK)
-def getAllBooks():
-    books = session.query(Book).all()
+def getDatabase():
+    session = SessionLocal()
 
-    return books
+    try:
+        yield session
+    except Exception as e:
+        print("Database not connected", e)
+        raise HTTPException(status_code=500, detail="Database not connected")
+    finally:
+        session.close()
+
+
+dbDepends = Annotated[Session, Depends(getDatabase)]
+
+
+@app.get("/books", status_code=status.HTTP_200_OK)
+def getAllBooks(db: dbDepends):
+
+    return db.query(Book).all()
 
 
 @app.get("/book/{id}", status_code=status.HTTP_200_OK)
-def getBookById(id: int = Path(gt=0)):
-    book = session.query(Book).filter(Book.id == id).first()
+def getBookById(db: Annotated[Session, Depends(getDatabase)], id: int = Path(gt=0)):
+    book = db.query(Book).filter(Book.id == id).first()
 
     if book is None:
         return HTTPException(status_code=404, detail="Book not found")
@@ -30,6 +46,7 @@ def getBookById(id: int = Path(gt=0)):
 
 @app.get("/books/", status_code=status.HTTP_200_OK)
 def getBooksByTitle(
+    db: dbDepends,
     title: Optional[str] = Query(None, min_length=3, max_length=100),
     author: Optional[str] = Query(None, min_length=3, max_length=100)
 ):
@@ -40,24 +57,25 @@ def getBooksByTitle(
         filters.append(Book.author.ilike(f"%{author}%"))
 
     if filters:
-        books = session.query(Book).filter(or_(*filters)).all()
+        books = db.query(Book).filter(or_(*filters)).all()
     else:
-        books = session.query(Book).all()
+        books = db.query(Book).all()
 
     return books
 
 
 @app.post("/book", status_code=status.HTTP_201_CREATED)
-def addBook(request: BookRequest):
+def addBook(db: dbDepends, request: BookRequest):
     book = Book(**request.model_dump())
 
-    session.add(book)
-    session.commit()
+    db.add(book)
+    db.commit()
+    db.refresh(book)
 
 
 @app.put("/book/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def updateBook(request: BookRequest, id: int = Path(gt=0)):
-    book = session.query(Book).filter(Book.id == id).first()
+def updateBook(db: dbDepends, request: BookRequest, id: int = Path(gt=0)):
+    book = db.query(Book).filter(Book.id == id).first()
 
     if book is None:
         raise HTTPException(status_code=404, detail="Book not found")
@@ -65,15 +83,15 @@ def updateBook(request: BookRequest, id: int = Path(gt=0)):
     book.title = request.title
     book.author = request.author
 
-    session.commit()
+    db.commit()
 
 
 @app.delete("/book/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def deleteBook(id: int = Path(gt=0)):
-    book = session.query(Book).filter(Book.id == id).first()
+def deleteBook(db: dbDepends, id: int = Path(gt=0)):
+    book = db.query(Book).filter(Book.id == id).first()
 
     if book is None:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    session.delete(book)
-    session.commit()
+    db.delete(book)
+    db.commit()

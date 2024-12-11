@@ -2,57 +2,78 @@ from fastapi import FastAPI, Path, Query, HTTPException
 from .models.book import Book
 from .models.bookrequest import BookRequest
 from starlette import status
+from sqlalchemy import or_
+from .database import engine, session
+from typing import Optional
 
 app = FastAPI()
 
-books = [
-    Book(1, "Harry Potter", "J.K. Rowling"),
-    Book(2, "The Lord of the Rings", "J.R.R. Tolkien"),
-]
+Book.metadata.create_all(bind=engine)
 
 
 @app.get("/books", status_code=status.HTTP_200_OK)
 def getAllBooks():
+    books = session.query(Book).all()
+
     return books
 
 
 @app.get("/book/{id}", status_code=status.HTTP_200_OK)
-def getBookById(id: int = Path(gt=0, lt=999)):
-    for book in books:
-        if book.id == id:
-            return book
-    raise HTTPException(status_code=404, detail="Book not found")
+def getBookById(id: int = Path(gt=0)):
+    book = session.query(Book).filter(Book.id == id).first()
+
+    if book is None:
+        return HTTPException(status_code=404, detail="Book not found")
+
+    return book
 
 
 @app.get("/books/", status_code=status.HTTP_200_OK)
-def getBooksByTitle(title: str = Query(min_length=3, max_length=100), author: str = Query(min_length=3, max_length=100)):
-    return [book for book in books if book.title.casefold() == title.casefold() or book.author.casefold() == author.casefold()]
+def getBooksByTitle(
+    title: Optional[str] = Query(None, min_length=3, max_length=100),
+    author: Optional[str] = Query(None, min_length=3, max_length=100)
+):
+    filters = []
+    if title:
+        filters.append(Book.title.ilike(f"%{title}%"))
+    if author:
+        filters.append(Book.author.ilike(f"%{author}%"))
+
+    if filters:
+        books = session.query(Book).filter(or_(*filters)).all()
+    else:
+        books = session.query(Book).all()
+
+    return books
 
 
 @app.post("/book", status_code=status.HTTP_201_CREATED)
 def addBook(request: BookRequest):
-    book = Book(id=len(books) + 1, title=request.title, author=request.author)
-    books.append(book)
+    book = Book(**request.model_dump())
+
+    session.add(book)
+    session.commit()
 
 
 @app.put("/book/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def updateBook(request: BookRequest, id: int = Path(gt=0, lt=999)):
-    book_changed = False
-    for book in books:
-        if book.id == id:
-            book.title = request.title
-            book.author = request.author
-            book_changed = True
-    if not book_changed:
+def updateBook(request: BookRequest, id: int = Path(gt=0)):
+    book = session.query(Book).filter(Book.id == id).first()
+
+    if book is None:
         raise HTTPException(status_code=404, detail="Book not found")
+
+    book.title = request.title
+    book.author = request.author
+
+    session.commit()
 
 
 @app.delete("/book/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def deleteBook(id: int = Path(gt=0, lt=999)):
-    book_deleted = False
-    for book in books:
-        if book.id == id:
-            books.remove(book)
-            book_deleted = True
-    if not book_deleted:
+def deleteBook(id: int = Path(gt=0)):
+    book = session.query(Book).filter(Book.id == id).first()
+
+    if book is None:
         raise HTTPException(status_code=404, detail="Book not found")
+
+    session.delete(book)
+    session.commit()

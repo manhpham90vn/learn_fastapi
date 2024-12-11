@@ -1,9 +1,11 @@
-class Book:
-    id: int
-    title: str
-    author: str
+from ..database import Base
+from sqlalchemy import Column, Integer, String
 
-    def __init__(self, id: int, title: str, author: str):
-        self.id = id
-        self.title = title
-        self.author = author
+
+class Book(Base):
+
+    __tablename__ = 'books'
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(100))
+    author = Column(String(100))

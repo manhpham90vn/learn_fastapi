@@ -26,8 +26,8 @@ def getDatabase():
     try:
         yield session
     except Exception as e:
-        print("Database not connected", e)
-        raise HTTPException(status_code=500, detail="Database not connected")
+        print("Database error", e)
+        raise HTTPException(status_code=500, detail="Database error")
     finally:
         session.close()
 

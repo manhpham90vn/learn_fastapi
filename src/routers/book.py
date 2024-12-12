@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi import Path, Query, HTTPException, Depends
 from typing import Annotated
 from ..models.book import Book
-from ..models.bookrequest import BookRequest
+from ..models.requests.book_request import BookRequest
 from starlette import status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -10,16 +10,16 @@ from typing import Optional
 from ..routers.auth import router
 from ..database import dbDepends, getDatabase
 
-router = APIRouter()
+router = APIRouter(prefix="/book", tags=["book"])
 
 
-@router.get("/books", status_code=status.HTTP_200_OK)
+@router.get("/", status_code=status.HTTP_200_OK)
 def getAllBooks(db: dbDepends):
 
     return db.query(Book).all()
 
 
-@router.get("/book/{id}", status_code=status.HTTP_200_OK)
+@router.get("/{id}", status_code=status.HTTP_200_OK)
 def getBookById(db: Annotated[Session, Depends(getDatabase)], id: int = Path(gt=0)):
     book = db.query(Book).filter(Book.id == id).first()
 
@@ -29,7 +29,7 @@ def getBookById(db: Annotated[Session, Depends(getDatabase)], id: int = Path(gt=
     return book
 
 
-@router.get("/books/", status_code=status.HTTP_200_OK)
+@router.get("/", status_code=status.HTTP_200_OK)
 def getBooksByTitle(
     db: dbDepends,
     title: Optional[str] = Query(None, min_length=3, max_length=100),
@@ -49,7 +49,7 @@ def getBooksByTitle(
     return books
 
 
-@router.post("/book", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def addBook(db: dbDepends, request: BookRequest):
     book = Book(**request.model_dump())
 
@@ -58,7 +58,7 @@ def addBook(db: dbDepends, request: BookRequest):
     db.refresh(book)
 
 
-@router.put("/book/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def updateBook(db: dbDepends, request: BookRequest, id: int = Path(gt=0)):
     book = db.query(Book).filter(Book.id == id).first()
 
@@ -71,7 +71,7 @@ def updateBook(db: dbDepends, request: BookRequest, id: int = Path(gt=0)):
     db.commit()
 
 
-@router.delete("/book/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def deleteBook(db: dbDepends, id: int = Path(gt=0)):
     book = db.query(Book).filter(Book.id == id).first()
 

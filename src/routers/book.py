@@ -8,20 +8,22 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import Optional
 from ..routers.auth import router
-from ..database import dbDepends, getDatabase
+from ..database import getDatabase
+from ..dependency import userDepends, dbDepends
 
 router = APIRouter(prefix="/book", tags=["book"])
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
-def getAllBooks(db: dbDepends):
+@router.get("", status_code=status.HTTP_200_OK)
+def getAllBooks(user: userDepends, db: dbDepends):
 
-    return db.query(Book).all()
+    return db.query(Book).filter(Book.owner_id == user.get("id")).all()
 
 
 @router.get("/{id}", status_code=status.HTTP_200_OK)
-def getBookById(db: Annotated[Session, Depends(getDatabase)], id: int = Path(gt=0)):
-    book = db.query(Book).filter(Book.id == id).first()
+def getBookById(user: userDepends, db: dbDepends, id: int = Path(gt=0)):
+    book = db.query(Book).filter(Book.id == id).filter(
+        Book.owner_id == user.get("id")).first()
 
     if book is None:
         return HTTPException(status_code=404, detail="Book not found")
@@ -31,6 +33,7 @@ def getBookById(db: Annotated[Session, Depends(getDatabase)], id: int = Path(gt=
 
 @router.get("/", status_code=status.HTTP_200_OK)
 def getBooksByTitle(
+    user: userDepends,
     db: dbDepends,
     title: Optional[str] = Query(None, min_length=3, max_length=100),
     author: Optional[str] = Query(None, min_length=3, max_length=100)
@@ -42,16 +45,17 @@ def getBooksByTitle(
         filters.append(Book.author.ilike(f"%{author}%"))
 
     if filters:
-        books = db.query(Book).filter(or_(*filters)).all()
+        books = db.query(Book).filter(
+            Book.id == user.get("id")).filter(or_(*filters)).all()
     else:
-        books = db.query(Book).all()
+        books = db.query(Book).filter(Book.id == user.get("id")).all()
 
     return books
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def addBook(db: dbDepends, request: BookRequest):
-    book = Book(**request.model_dump())
+def addBook(user: userDepends, db: dbDepends, request: BookRequest):
+    book = Book(**request.model_dump(), owner_id=user.get("id"))
 
     db.add(book)
     db.commit()
@@ -59,8 +63,9 @@ def addBook(db: dbDepends, request: BookRequest):
 
 
 @router.put("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def updateBook(db: dbDepends, request: BookRequest, id: int = Path(gt=0)):
-    book = db.query(Book).filter(Book.id == id).first()
+def updateBook(user: userDepends, db: dbDepends, request: BookRequest, id: int = Path(gt=0)):
+    book = db.query(Book).filter(Book.id == id).filter(
+        Book.id == user.get("id")).first()
 
     if book is None:
         raise HTTPException(status_code=404, detail="Book not found")
@@ -72,8 +77,9 @@ def updateBook(db: dbDepends, request: BookRequest, id: int = Path(gt=0)):
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def deleteBook(db: dbDepends, id: int = Path(gt=0)):
-    book = db.query(Book).filter(Book.id == id).first()
+def deleteBook(user: userDepends, db: dbDepends, id: int = Path(gt=0)):
+    book = db.query(Book).filter(Book.id == id).filter(
+        Book.id == user.get("id")).first()
 
     if book is None:
         raise HTTPException(status_code=404, detail="Book not found")

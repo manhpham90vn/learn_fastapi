@@ -1,14 +1,11 @@
 from fastapi import APIRouter
-from fastapi import Path, Query, HTTPException, Depends
-from typing import Annotated
+from fastapi import Path, Query, HTTPException
 from ..models.book import Book
 from ..models.requests.book_request import BookRequest
 from starlette import status
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
 from typing import Optional
 from ..routers.auth import router
-from ..database import getDatabase
 from ..dependency import userDepends, dbDepends
 
 router = APIRouter(prefix="/book", tags=["book"])

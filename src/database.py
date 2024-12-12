@@ -2,7 +2,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 from .config import SQLALCHEMY_DATABASE_URI
-from sqlalchemy.exc import IntegrityError
 
 engine = create_engine(SQLALCHEMY_DATABASE_URI)
 

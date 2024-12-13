@@ -7,9 +7,6 @@ class BookRequest(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "example": {
-                "title": "Harry Potter",
-                "author": "J.K. Rowling"
-            }
+            "example": {"title": "Harry Potter", "author": "J.K. Rowling"}
         }
     }

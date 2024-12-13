@@ -1,11 +1,10 @@
 import datetime
 import json
-from typing import Annotated
-from typing import Optional
+from typing import Annotated, Optional
 
 import jwt
-from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .containers import container
 
@@ -20,14 +19,17 @@ def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] 
     if expires_delta:
         expire = datetime.datetime.now() + expires_delta
     else:
-        expire = datetime.datetime.now(
-        ) + datetime.timedelta(minutes=access_token_expire_minutes)
+        expire = datetime.datetime.now() + datetime.timedelta(
+            minutes=access_token_expire_minutes
+        )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
     return encoded_jwt
 
 
-def get_current_user(credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]):
+def get_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+):
     token = credentials.credentials
     try:
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])

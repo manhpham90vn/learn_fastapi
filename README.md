@@ -1,5 +1,26 @@
 # Learn FastAPI
 
+## Format 
+
+```shell
+poetry run black src
+poetry run isort src
+poetry run pylint src
+poetry run mypy src
+```
+
+## Add dependency
+
+```shell
+poetry add fastapi
+```
+
+## Add dev dependency
+
+```shell
+poetry add isort --group dev
+```
+
 ## Install
 
 ```shell

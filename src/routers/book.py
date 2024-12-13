@@ -1,11 +1,10 @@
 from typing import Optional
 
-from fastapi import APIRouter
-from fastapi import Path, Query, HTTPException
+from fastapi import APIRouter, HTTPException, Path, Query
 from sqlalchemy import or_
 from starlette import status
 
-from ..dependency import userDepends, dbDepends
+from ..dependency import dbDepends, userDepends
 from ..models.book import Book
 from ..models.requests.book_request import BookRequest
 
@@ -19,8 +18,12 @@ def getAllBooks(user: userDepends, db: dbDepends):
 
 @router.get("/{id}", status_code=status.HTTP_200_OK)
 def getBookById(user: userDepends, db: dbDepends, id: int = Path(gt=0)):
-    book = db.query(Book).filter(Book.id == id).filter(
-        Book.owner_id == user.get("id")).first()
+    book = (
+        db.query(Book)
+        .filter(Book.id == id)
+        .filter(Book.owner_id == user.get("id"))
+        .first()
+    )
 
     if book is None:
         return HTTPException(status_code=404, detail="Book not found")
@@ -30,10 +33,10 @@ def getBookById(user: userDepends, db: dbDepends, id: int = Path(gt=0)):
 
 @router.get("/", status_code=status.HTTP_200_OK)
 def getBooksByTitle(
-        user: userDepends,
-        db: dbDepends,
-        title: Optional[str] = Query(None, min_length=3, max_length=100),
-        author: Optional[str] = Query(None, min_length=3, max_length=100)
+    user: userDepends,
+    db: dbDepends,
+    title: Optional[str] = Query(None, min_length=3, max_length=100),
+    author: Optional[str] = Query(None, min_length=3, max_length=100),
 ):
     filters = []
     if title:
@@ -42,8 +45,9 @@ def getBooksByTitle(
         filters.append(Book.author.ilike(f"%{author}%"))
 
     if filters:
-        books = db.query(Book).filter(
-            Book.id == user.get("id")).filter(or_(*filters)).all()
+        books = (
+            db.query(Book).filter(Book.id == user.get("id")).filter(or_(*filters)).all()
+        )
     else:
         books = db.query(Book).filter(Book.id == user.get("id")).all()
 
@@ -60,9 +64,12 @@ def addBook(user: userDepends, db: dbDepends, request: BookRequest):
 
 
 @router.put("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def updateBook(user: userDepends, db: dbDepends, request: BookRequest, id: int = Path(gt=0)):
-    book = db.query(Book).filter(Book.id == id).filter(
-        Book.id == user.get("id")).first()
+def updateBook(
+    user: userDepends, db: dbDepends, request: BookRequest, id: int = Path(gt=0)
+):
+    book = (
+        db.query(Book).filter(Book.id == id).filter(Book.id == user.get("id")).first()
+    )
 
     if book is None:
         raise HTTPException(status_code=404, detail="Book not found")
@@ -75,8 +82,9 @@ def updateBook(user: userDepends, db: dbDepends, request: BookRequest, id: int =
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def deleteBook(user: userDepends, db: dbDepends, id: int = Path(gt=0)):
-    book = db.query(Book).filter(Book.id == id).filter(
-        Book.id == user.get("id")).first()
+    book = (
+        db.query(Book).filter(Book.id == id).filter(Book.id == user.get("id")).first()
+    )
 
     if book is None:
         raise HTTPException(status_code=404, detail="Book not found")

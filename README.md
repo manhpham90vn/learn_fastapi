@@ -12,3 +12,15 @@ poetry install
 poetry shell
 uvicorn src.main:app --reload --host 0.0.0.0 --port 3000
 ```
+
+### Create migration
+
+```shell
+alembic revision -m "create user"
+```
+
+### Apply migration
+
+```shell
+alembic upgrade head
+```

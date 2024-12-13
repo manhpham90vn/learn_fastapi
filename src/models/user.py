@@ -1,5 +1,7 @@
-from .base import Base
 from sqlalchemy import Column, Integer, String, Boolean
+from src.containers import container
+
+Base = container.get_base()
 
 
 class User(Base):

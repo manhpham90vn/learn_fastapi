@@ -1,5 +1,7 @@
-from .base import Base
 from sqlalchemy import Column, Integer, String, ForeignKey
+from ..containers import container
+
+Base = container.get_base()
 
 
 class Book(Base):

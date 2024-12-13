@@ -1,6 +1,7 @@
+import os
+
 from dependency_injector import containers, providers
 from dotenv import load_dotenv
-import os
 from sqlalchemy.ext.declarative import declarative_base
 
 load_dotenv()

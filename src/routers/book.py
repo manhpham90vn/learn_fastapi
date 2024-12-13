@@ -1,19 +1,19 @@
+from typing import Optional
+
 from fastapi import APIRouter
 from fastapi import Path, Query, HTTPException
+from sqlalchemy import or_
+from starlette import status
+
+from ..dependency import userDepends, dbDepends
 from ..models.book import Book
 from ..models.requests.book_request import BookRequest
-from starlette import status
-from sqlalchemy import or_
-from typing import Optional
-from ..routers.auth import router
-from ..dependency import userDepends, dbDepends
 
 router = APIRouter(prefix="/book", tags=["book"])
 
 
 @router.get("", status_code=status.HTTP_200_OK)
 def getAllBooks(user: userDepends, db: dbDepends):
-
     return db.query(Book).filter(Book.owner_id == user.get("id")).all()
 
 
@@ -30,10 +30,10 @@ def getBookById(user: userDepends, db: dbDepends, id: int = Path(gt=0)):
 
 @router.get("/", status_code=status.HTTP_200_OK)
 def getBooksByTitle(
-    user: userDepends,
-    db: dbDepends,
-    title: Optional[str] = Query(None, min_length=3, max_length=100),
-    author: Optional[str] = Query(None, min_length=3, max_length=100)
+        user: userDepends,
+        db: dbDepends,
+        title: Optional[str] = Query(None, min_length=3, max_length=100),
+        author: Optional[str] = Query(None, min_length=3, max_length=100)
 ):
     filters = []
     if title:

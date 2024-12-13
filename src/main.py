@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+
 from .routers.auth import router as auth_router
 from .routers.book import router as book_router
 

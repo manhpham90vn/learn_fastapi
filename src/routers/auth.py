@@ -1,13 +1,15 @@
-from passlib.context import CryptContext
-from ..models.user import User
+import json
+
 from fastapi import APIRouter, HTTPException
-from ..dependency import dbDepends
+from passlib.context import CryptContext
 from starlette import status
+
+from ..dependency import dbDepends
+from ..models.requests.login_request import LoginRequest
 from ..models.requests.register_request import RegisterRequest
 from ..models.responses.register_response import RegisterResponse
-from ..models.requests.login_request import LoginRequest
+from ..models.user import User
 from ..utils import create_access_token
-import json
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -29,7 +31,8 @@ def register(db: dbDepends, request: RegisterRequest):
     access_token = create_access_token(
         data={"sub": json.dumps({"email": user.email, "id": user.id})}
     )
-    return RegisterResponse(id=user.id, email=user.email, first_name=user.first_name, last_name=user.last_name, role=user.role, access_token=access_token)
+    return RegisterResponse(id=user.id, email=user.email, first_name=user.first_name, last_name=user.last_name,
+                            role=user.role, access_token=access_token)
 
 
 @router.post("/login", status_code=status.HTTP_200_OK, response_model=RegisterResponse)
@@ -44,4 +47,5 @@ def login(db: dbDepends, request: LoginRequest):
     access_token = create_access_token(
         data={"sub": json.dumps({"email": user.email, "id": user.id})}
     )
-    return RegisterResponse(id=user.id, email=user.email, first_name=user.first_name, last_name=user.last_name, role=user.role, access_token=access_token)
+    return RegisterResponse(id=user.id, email=user.email, first_name=user.first_name, last_name=user.last_name,
+                            role=user.role, access_token=access_token)

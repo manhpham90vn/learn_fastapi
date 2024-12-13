@@ -1,10 +1,12 @@
-import jwt
 import datetime
+import json
+from typing import Annotated
 from typing import Optional
+
+import jwt
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Annotated
-import json
+
 from .containers import container
 
 security = HTTPBearer()

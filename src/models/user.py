@@ -1,11 +1,11 @@
 from sqlalchemy import Column, Integer, String, Boolean
+
 from src.containers import container
 
 Base = container.get_base()
 
 
 class User(Base):
-
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -16,7 +16,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     role = Column(String(100))
 
-    def __init__(self, email: str, first_name: str, last_name: str, hashed_password: str, role: str, is_active: bool = True):
+    def __init__(self, email: str, first_name: str, last_name: str, hashed_password: str, role: str,
+                 is_active: bool = True):
         self.email = email
         self.first_name = first_name
         self.last_name = last_name
